@@ -1,72 +1,61 @@
-# fp-dataset-artifacts
+# Multi-task Learning (MTL) and T0 Model Experiments
 
-Project by Kaj Bostrom, Jifan Chen, and Greg Durrett. Code by Kaj Bostrom and Jifan Chen.
+This README provides instructions on how to set up environments and run fine-tuning scripts for MTL datasets as well as for the T0 model.
 
-## Getting Started
-You'll need Python >= 3.6 to run the code in this repo.
+## Setting Up for T0
 
-First, clone the repository:
+The T0 model requires a specific setup. To install the T0 module, follow these steps:
 
-`git clone git@github.com:gregdurrett/fp-dataset-artifacts.git`
+1. Install the T0 module by running:
+    ```bash
+    pip install -e .
+    ```
+   
+2. For applications that require the original seqio tasks used for massively multitask fine-tuning, install additional requirements with:
+    ```bash
+    pip install -e .[seqio_tasks]
+    ```
 
-Then install the dependencies:
+3. To run an experiment with the T0 model, use the following command:
+    ```bash
+    python run_t_zero.py \
+        --dataset_name super_glue \
+        --dataset_config_name rte \
+        --template_name "must be true" \
+        --model_name_or_path bigscience/T0_3B \
+        --output_dir ./debug
+    ```
 
-`pip install --upgrade pip`
+## Setting Up for MTL Datasets
 
-`pip install -r requirements.txt`
+For experiments involving NLI and PI datasets, ensure the following dependencies are satisfied:
 
-If you're running on a shared machine and don't have the privileges to install Python packages globally,
-or if you just don't want to install these packages permanently, take a look at the "Virtual environments"
-section further down in the README.
+- Python 3.6
+- MXNet 1.6.0 (for CUDA 10.0, install with `pip install mxnet-cu100`)
+- GluonNLP 0.9.0
 
-To make sure pip is installing packages for the right Python version, run `pip --version`
-and check that the path it reports is for the right Python interpreter.
+### Running Experiments on MTL Datasets
 
-## Training and evaluating a model
-To train an ELECTRA-small model on the SNLI natural language inference dataset, you can run the following command:
+To train on MNLI and test on MNLI's development set and HANS, use the following command:
 
-`python3 run.py --do_train --task nli --dataset snli --output_dir ./trained_model/`
+```bash
+make train-bert exp=mnli_seed/bert task=MNLI test-split=dev_matched bs=32 gpu=0 \
+    nepochs=3 seed=2 lr=0.00002
+```
 
-Checkpoints will be written to sub-folders of the `trained_model` output directory.
-To evaluate the final trained model on the SNLI dev set, you can use
+To train on QQP and test on QQP's development set and PAWS, run:
 
-`python3 run.py --do_eval --task nli --dataset snli --model ./trained_model/ --output_dir ./eval_output/`
+```bash
+make train-bert exp=mnli_seed/bert task=QQP test-split=dev bs=32 gpu=0 \
+    nepochs=3 seed=2 lr=0.00002
+```
 
-To prevent `run.py` from trying to use a GPU for training, pass the argument `--no_cuda`.
+## Notes
 
-To train/evaluate a question answering model on SQuAD instead, change `--task nli` and `--dataset snli` to `--task qa` and `--dataset squad`.
+- Replace `mnli_seed/bert` with your experiment name.
+- Adjust `bs=32` (batch size) if needed based on your GPU memory.
+- `gpu=0` indicates using the first GPU; adjust if necessary.
+- The `seed` parameter can be set to any integer for reproducibility.
+- `lr` is the learning rate; modify according to your model's requirements.
 
-**Descriptions of other important arguments are available in the comments in `run.py`.**
-
-Data and models will be automatically downloaded and cached in `~/.cache/huggingface/`.
-To change the caching directory, you can modify the shell environment variable `HF_HOME` or `TRANSFORMERS_CACHE`.
-For more details, see [this doc](https://huggingface.co/transformers/v4.0.1/installation.html#caching-models).
-
-An ELECTRA-small based NLI model trained on SNLI for 3 epochs (e.g. with the command above) should achieve an accuracy of around 89%, depending on batch size.
-An ELECTRA-small based QA model trained on SQuAD for 3 epochs should achieve around 78 exact match score and 86 F1 score.
-
-## Working with datasets
-This repo uses [Huggingface Datasets](https://huggingface.co/docs/datasets/) to load data.
-The Dataset objects loaded by this module can be filtered and updated easily using the `Dataset.filter` and `Dataset.map` methods.
-For more information on working with datasets loaded as HF Dataset objects, see [this page](https://huggingface.co/docs/datasets/process.html).
-
-## Virtual environments
-Python 3 supports virtual environments with the `venv` module. These will let you select a particular Python interpreter
-to be the default (so that you can run it with `python`) and install libraries only for a particular project.
-To set up a virtual environment, use the following command:
-
-`python3 -m venv path/to/my_venv_dir`
-
-This will set up a virtual environment in the target directory.
-WARNING: This command overwrites the target directory, so choose a path that doesn't exist yet!
-
-To activate your virtual environment (so that `python` redirects to the right version, and your virtual environment packages are active),
-use this command:
-
-`source my_venv_dir/bin/activate`
-
-This command looks slightly different if you're not using `bash` on Linux. The [venv docs](https://docs.python.org/3/library/venv.html) have a list of alternate commands for different systems.
-
-Once you've activated your virtual environment, you can use `pip` to install packages the way you normally would, but the installed
-packages will stay in the virtual environment instead of your global Python installation. Only the virtual environment's Python
-executable will be able to see these packages.
+Please ensure your environment is correctly set up with the necessary dependencies before running the experiments.
